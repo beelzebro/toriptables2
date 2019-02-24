@@ -1,13 +1,16 @@
-# toriptables2
+# toriptables2 
+![](https://img.shields.io/badge/toriptables2-python_2.7-blue.svg) ![](https://img.shields.io/badge/dependencies-tor-orange.svg) ![](https://img.shields.io/badge/GPL-v2-blue.svg)
 
 Tor Iptables script is an anonymizer that sets up iptables and tor to route all services and traffic including DNS through the Tor network.
 
 #### Dependencies:
-tor
+```bash
+apt install tor
+```
 
 #### [Usage](https://drive.google.com/open?id=0B79r4wTVj-CZVy10Ujg5Vjl5WFk):
 ```python
-toriptables2.py -h
+toriptables2.py
 ```
 #### To test:
 * [Check My IP](http://www.check-my-ip.net)
@@ -37,14 +40,14 @@ sudo kill -HUP $(pidof tor)
 * [Tor IPTables rules loaded](https://drive.google.com/open?id=0B79r4wTVj-CZT0NMV2VZRTM1REE)
 
 ---
-## [toriptables2g for GUI Desktop with notification](https://bitbucket.org/ruped24/toriptables2g/src)
+## [toriptables2g with GUI notification](https://bitbucket.org/ruped24/toriptables2g/src)
 #### Dependencies:
-tor python-notify
-
+```bash
+apt install tor python-notify
+```
 [Screenshot](https://drive.google.com/open?id=0B79r4wTVj-CZSEdkaTBNOVc5aUU)
 
 ---
+[Installation Methods](https://github.com/ruped24/toriptables2/wiki/Optional-Installation-methods-for-toriptables2.py)
+
 [Troubleshooting and FAQ](https://github.com/ruped24/toriptables2/wiki/Troubleshooting)
-
-[Optional Installation Methods](https://github.com/ruped24/toriptables2/wiki/Optional-Installation-methods-for-toriptables2.py)
-
