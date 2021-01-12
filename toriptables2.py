@@ -1,5 +1,5 @@
 #! /usr/bin/env python2
-# Written by Rupe version 2
+# Written by Rupe version 2.1
 #
 """
 Tor Iptables script is an anonymizer
@@ -12,7 +12,7 @@ from commands import getoutput
 from subprocess import call, check_call, CalledProcessError
 from os.path import isfile, basename
 from os import devnull
-from sys import stdout, stderr
+from sys import exit, stdout, stderr
 from atexit import register
 from argparse import ArgumentParser
 from json import load
@@ -25,7 +25,7 @@ class TorIptables(object):
   def __init__(self):
     self.local_dnsport = "53"  # DNSPort
     self.virtual_net = "10.0.0.0/10"  # VirtualAddrNetwork
-    self.local_loopback = "127.0.0.1" # Local loopback 
+    self.local_loopback = "127.0.0.1" # Local loopback
     self.non_tor_net = ["192.168.0.0/16", "172.16.0.0/12"]
     self.non_tor = ["127.0.0.0/9", "127.128.0.0/10", "127.0.0.0/8"]
     self.tor_uid = getoutput("id -ur debian-tor")  # Tor user uid
@@ -38,7 +38,7 @@ VirtualAddrNetwork %s
 AutomapHostsOnResolve 1
 TransPort %s
 DNSPort %s
-''' % (basename(__file__), self.trans_port, self.virtual_net, 
+''' % (basename(__file__), self.trans_port, self.virtual_net,
        self.trans_port, self.local_dnsport)
 
   def flush_iptables_rules(self):
@@ -60,23 +60,7 @@ DNSPort %s
         if tor_restart is 0:
           print(" {0}".format(
               "[\033[92m+\033[0m] Anonymizer status \033[92m[ON]\033[0m"))
-          print(" {0}".format(
-              "[\033[92m*\033[0m] Getting public IP, please wait..."))
-          retries = 0
-          my_public_ip = None
-          while retries < 12 and not my_public_ip:
-            retries += 1
-            try:
-              my_public_ip = load(urlopen('http://ident.me/.json'))['address']
-            except URLError:
-              sleep(5)
-              print(" [\033[93m?\033[0m] Still waiting for IP address...")
-          print
-          if not my_public_ip:
-            my_public_ip = getoutput('wget -qO - v4.ifconfig.co')
-          if not my_public_ip:
-            exit(" \033[91m[!]\033[0m Can't get public ip address!")
-          print(" {0}".format("[\033[92m+\033[0m] Your IP is \033[92m%s\033[0m" % my_public_ip))
+          self.get_ip()
       except CalledProcessError as err:
         print("\033[91m[!] Command failed: %s\033[0m" % ' '.join(err.cmd))
 
@@ -111,6 +95,27 @@ DNSPort %s
           self.tor_uid, "-j", "ACCEPT"])
     call(["iptables", "-A", "OUTPUT", "-j", "REJECT"])
 
+  def get_ip(self):
+    print(" {0}".format(
+        "[\033[92m*\033[0m] Getting public IP, please wait..."))
+    retries = 0
+    my_public_ip = None
+    while retries < 12 and not my_public_ip:
+      retries += 1
+      try:
+        my_public_ip = load(urlopen('https://check.torproject.org/api/ip'))['IP']
+      except URLError:
+        sleep(5)
+        print(" [\033[93m?\033[0m] Still waiting for IP address...")
+      except ValueError:
+        break
+    print
+    if not my_public_ip:
+      my_public_ip = getoutput('wget -qO - ifconfig.me')
+    if not my_public_ip:
+      exit(" \033[91m[!]\033[0m Can't get public ip address!")
+    print(" {0}".format("[\033[92m+\033[0m] Your IP is \033[92m%s\033[0m" % my_public_ip))
+
 
 if __name__ == '__main__':
   parser = ArgumentParser(
@@ -124,6 +129,14 @@ if __name__ == '__main__':
                       '--flush',
                       action='store_true',
                       help='This option flushes the iptables rules to default')
+  parser.add_argument('-r',
+                      '--refresh',
+                      action='store_true',
+                      help='This option will change the circuit and gives new IP')
+  parser.add_argument('-i',
+                      '--ip',
+                      action='store_true',
+                      help='This option will output the current public IP address')
   args = parser.parse_args()
 
   try:
@@ -139,6 +152,11 @@ if __name__ == '__main__':
       load_tables.flush_iptables_rules()
       print(" {0}".format(
           "[\033[93m!\033[0m] Anonymizer status \033[91m[OFF]\033[0m"))
+    elif args.ip:
+      load_tables.get_ip()
+    elif args.refresh:
+      call(['kill', '-HUP', '%s' % getoutput('pidof tor')])
+      load_tables.get_ip()
     else:
       parser.print_help()
   except Exception as err:
